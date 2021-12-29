@@ -33,7 +33,7 @@ import domain.Settlement;
 public class Function {
 	
 	
-	private static String STORAGE_CONN_STR = "DefaultEndpointsProtocol=https;AccountName=settlementsstorage;AccountKey=34tKGowIai8RoJlkNDF1ZGIe7NdatCqf0uhwW9hPl9krNs8fPFoNMrrhQG8+bgwooBx7vYTDT05qzjBZrDCRrQ==;EndpointSuffix=core.windows.net";
+	private static String STORAGE_CONN_STR = "ENTER STORAGE CONN STR";
 	private static String CONTAINER_NAME = "settlements";
 	
 	private CloudStorageAccount storageAccount;
@@ -61,7 +61,7 @@ public class Function {
 		if(!isBlankStr(System.getenv("local")))
 		{
 			isLocalEnv = true;
-			fileName = "C:\\Users\\arazeem\\source\\repos\\java-apps\\csv-to-json\\csvtojson\\src\\main\\resources\\settlements.csv";
+			fileName = "";
 			file = new File(fileName);
 		}
 		
