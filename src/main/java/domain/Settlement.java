@@ -2,6 +2,7 @@ package domain;
 
 import java.io.Serializable;
 
+import com.azure.messaging.eventhubs.EventData;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Settlement implements Serializable {

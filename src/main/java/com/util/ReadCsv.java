@@ -24,7 +24,7 @@ public class ReadCsv {
 	private static void parseCsv() {
 
 		File file = new File(
-				"C:\\Users\\arazeem\\source\\repos\\java-apps\\csv-to-json\\csvtojson\\src\\main\\resources\\settlements.csv");
+				"C:\\Users\\arazeem\\source\\repos\\java-apps\\csv-to-json\\csvtojson\\src\\main\\resources\\cnsfails202001a.txt");
 
 		List<Settlement> settlements = new ArrayList<Settlement>();
 

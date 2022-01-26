@@ -6,6 +6,7 @@ import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -30,11 +31,11 @@ import domain.Settlement;
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class Function {
+public class Function {	
 	
-	
-	private static String STORAGE_CONN_STR = "ENTER STORAGE CONN STR";
-	private static String CONTAINER_NAME = "settlements";
+	private static final String FILENAME = "filename";
+	private static String STORAGE_CONN_STR = "<Enter Storage Conn String>";
+	private static String CONTAINER_NAME = "<Enter Storage Container Name>";
 	
 	private CloudStorageAccount storageAccount;
 	private CloudBlobClient blobClient;
@@ -67,16 +68,17 @@ public class Function {
 		
 		Map<String, String> paramMap = request.getQueryParameters();
 		
-		if(paramMap != null && paramMap.get("filename") != null)
+		if(paramMap != null && paramMap.get(FILENAME) != null)
 		{
-			fileName = paramMap.get("filename");
+			fileName = paramMap.get(FILENAME);
 		}	
 		
 		if(isBlankStr(fileName))
 		{
-			fileName = "settlements.csv";
+			//fileName = "settlements.csv";
+			fileName = "cnsfails202001a.txt";
 		}
-		
+			
 		// read file from storage
 		CloudBlockBlob blob = readFileFromStorage(fileName);	
 		Scanner sc = null;
@@ -111,15 +113,21 @@ public class Function {
 				settlements.add(settlement);
 			}
 			
-		} catch (Exception e) {			
+		} 
+		catch (NoSuchElementException e) {			
+			context.getLogger().info("NoSuchElementException!! Fix It!");
+		}
+		catch (Exception e) {			
 			e.printStackTrace();
 			String msg = "Error parsing csv: " + e.getMessage();
 			return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(msg).build();
 		} finally {
 			if(sc != null) 	sc.close();
 		}
+		
+		EventHubsUtil.sendMsgsToEventHubs(settlements);
 
-		return request.createResponseBuilder(HttpStatus.OK).body(settlements).build();
+		return request.createResponseBuilder(HttpStatus.OK).body("Successfully sent " + settlements.size() + " events to event hubs").build();
 	}
 
 	private CloudBlockBlob readFileFromStorage(String filePath) {
@@ -145,31 +153,25 @@ public class Function {
 		} 
 		
 		catch (StorageException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		catch (InvalidKeyException e) {
-			
+		catch (InvalidKeyException e) {			
 			e.printStackTrace();
 		} catch (URISyntaxException e) {
 			
 			e.printStackTrace();
 		}
 		
-		
 		return blob;
 	}
 
 	
 	private boolean isBlankStr(String str)
-	{
-		
+	{		
 		if(str == null || "".equals(str.trim())){
 			return true;
-		}
-		
-		return false;
-		
+		}		
+		return false;		
 	}
 	
 }
