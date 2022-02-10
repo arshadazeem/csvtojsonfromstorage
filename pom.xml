@@ -16,7 +16,7 @@
 		<java.version>1.8</java.version>
 		<azure.functions.maven.plugin.version>1.14.1</azure.functions.maven.plugin.version>
 		<azure.functions.java.library.version>1.4.2</azure.functions.java.library.version>
-		<functionAppName>myfuncappname</functionAppName>
+		<functionAppName>myfuncapp</functionAppName>
 	</properties>
 
 	<dependencies>
@@ -91,8 +91,8 @@
 				<version>${azure.functions.maven.plugin.version}</version>
 				<configuration>
 					<appName>${functionAppName}</appName>
-					<resourceGroup>settlements-rg</resourceGroup>
-					<appServicePlanName>settlements-app-service-plan</appServicePlanName>
+					<resourceGroup>my-rg</resourceGroup>
+					<appServicePlanName>my-app-service-plan</appServicePlanName>
 					<region>eastus</region>
 					<!-- <disableAppInsights></disableAppInsights> -->
 					<runtime>
@@ -103,6 +103,22 @@
 						<property>
 							<name>FUNCTIONS_EXTENSION_VERSION</name>
 							<value>~3</value>
+						</property>
+						<property>
+							<name>AZURE_STORAGE_CONNECTION_STRING</name>
+							<value>EnterValidStorageConnString</value>
+						</property>
+						<property>
+							<name>SETTLEMENTS_STORAGE_CONTAINER</name>
+							<value>EnterValidStorageContainerName</value>
+						</property>
+						<property>
+							<name>EVENTHUBS_CONNECTION_STRING</name>
+							<value>EnterValidEHConnString</value>
+						</property>
+						<property>
+							<name>EVENTHUB_NAME</name>
+							<value>EnterValidEHName</value>
 						</property>
 					</appSettings>
 				</configuration>

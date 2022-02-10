@@ -13,13 +13,10 @@ import domain.Settlement;
 
 public class EventHubsUtil {
 
-	private static final String eventHubsconnectionString = "<Enter EH Conn String>";
-	private static final String eventHubName = "<Enter EH Topic>";
-
 	public static void sendMsgsToEventHubs(List<Settlement> settlements) {
 		
-		String evthubConnStr = System.getProperty("eventHubsconnectionString", eventHubsconnectionString);
-		String evthubName = System.getProperty(eventHubName, eventHubName);
+		String evthubConnStr = System.getenv("EVENTHUBS_CONNECTION_STRING");
+		String evthubName = System.getenv("EVENTHUB_NAME");
 
 		EventHubProducerClient producer = null;
 		try {

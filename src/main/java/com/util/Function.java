@@ -25,73 +25,67 @@ import com.microsoft.azure.storage.blob.CloudBlob;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
 import com.microsoft.azure.storage.blob.CloudBlobContainer;
 import com.microsoft.azure.storage.blob.CloudBlockBlob;
+import com.util.EventHubsUtil;
 
 import domain.Settlement;
 
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class Function {	
-	
+public class Function {
+
+	private static final String DELIMITER = "\\n|\\|";
 	private static final String FILENAME = "filename";
-	private static String STORAGE_CONN_STR = "<Enter Storage Conn String>";
-	private static String CONTAINER_NAME = "<Enter Storage Container Name>";
-	
+
 	private CloudStorageAccount storageAccount;
 	private CloudBlobClient blobClient;
 	private CloudBlobContainer container;
 	private CloudBlockBlob blob;
-	
+
 	/**
-	 * Function converts csv file to json
-	 * listens to an HTTP endpoint
+	 * Function converts csv file to json listens to an HTTP endpoint
+	 * 
 	 * @return json response of settlement data
 	 */
 	@FunctionName("CsvToJson")
 	public HttpResponseMessage run(@HttpTrigger(name = "req", methods = { HttpMethod.GET,
 			HttpMethod.POST }, authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
 			final ExecutionContext context) {
-		
+
 		context.getLogger().info("CSVToJSON HTTP trigger processed a request.");
-		
+
 		String fileName = "";
 		boolean isLocalEnv = false;
 		File file = null;
 		List<Settlement> settlements = new ArrayList<Settlement>();
-	
-		if(!isBlankStr(System.getenv("local")))
-		{
+
+		if (!isBlankStr(System.getenv("local"))) {
 			isLocalEnv = true;
 			fileName = "";
 			file = new File(fileName);
 		}
-		
+
 		Map<String, String> paramMap = request.getQueryParameters();
-		
-		if(paramMap != null && paramMap.get(FILENAME) != null)
-		{
+
+		if (paramMap != null && paramMap.get(FILENAME) != null) {
 			fileName = paramMap.get(FILENAME);
-		}	
-		
-		if(isBlankStr(fileName))
-		{
-			//fileName = "settlements.csv";
+		}
+
+		if (isBlankStr(fileName)) {
+			// fileName = "settlements.csv";
 			fileName = "cnsfails202001a.txt";
 		}
-			
-		// read file from storage
-		CloudBlockBlob blob = readFileFromStorage(fileName);	
-		Scanner sc = null;
-		
-		try {
 
-			if(!isLocalEnv)
-			{
-				sc = new Scanner(blob.openInputStream()).useDelimiter("\\n|\\|");
-			}
-			else {
-			// parse tokens using pipe (|) and newLine delimiters 
-			 sc = new Scanner(file).useDelimiter("\\n|\\|");
+		Scanner sc = null;
+		try {
+			// read file from storage
+			CloudBlockBlob blob = readFileFromStorage(fileName);
+
+			if (!isLocalEnv) {
+				sc = new Scanner(blob.openInputStream()).useDelimiter(DELIMITER);
+			} else {
+				// parse tokens using pipe (|) and newLine delimiters
+				sc = new Scanner(file).useDelimiter(DELIMITER);
 			}
 			if (sc.hasNext()) {
 				// skip first line that has headers
@@ -100,7 +94,8 @@ public class Function {
 
 			while (sc.hasNextLine()) {
 
-				// Parse in input File format: SETTLEMENT DATE|CUSIP|SYMBOL|QUANTITY|DESCRIPTION|PRICE
+				// Parse in input File format: SETTLEMENT
+				// DATE|CUSIP|SYMBOL|QUANTITY|DESCRIPTION|PRICE
 				Settlement settlement = new Settlement();
 				settlement.setSettlementDate(sc.next());
 				settlement.setCusip(sc.next());
@@ -112,66 +107,61 @@ public class Function {
 				// add to list
 				settlements.add(settlement);
 			}
-			
-		} 
-		catch (NoSuchElementException e) {			
+
+		} catch (NoSuchElementException e) {
 			context.getLogger().info("NoSuchElementException!! Fix It!");
-		}
-		catch (Exception e) {			
+		} catch (Exception e) {
 			e.printStackTrace();
 			String msg = "Error parsing csv: " + e.getMessage();
 			return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(msg).build();
 		} finally {
-			if(sc != null) 	sc.close();
+			if (sc != null)
+				sc.close();
 		}
-		
+
 		EventHubsUtil.sendMsgsToEventHubs(settlements);
 
-		return request.createResponseBuilder(HttpStatus.OK).body("Successfully sent " + settlements.size() + " events to event hubs").build();
+		return request.createResponseBuilder(HttpStatus.OK)
+				.body("Successfully sent " + settlements.size() + " events to event hubs").build();
 	}
 
-	private CloudBlockBlob readFileFromStorage(String filePath) {
-		
+	private CloudBlockBlob readFileFromStorage(String filePath) throws Exception {
+
 		String connectStr = System.getenv("AZURE_STORAGE_CONNECTION_STRING");
-		String containerName = System.getenv("SETTLEMENTS_CONTAINER");
-		
-		if(isBlankStr(containerName))
-		{
-			containerName = CONTAINER_NAME;
+		String containerName = System.getenv("SETTLEMENTS_STORAGE_CONTAINER");
+
+		if (isBlankStr(connectStr)) {
+			throw new Exception("Error: Storage Connection String is missing");
 		}
-		
-		if(isBlankStr(connectStr))
-		{
-			connectStr = STORAGE_CONN_STR;
+
+		if (isBlankStr(containerName)) {
+			throw new Exception("Error: Storage Container Name is missing");
 		}
-		
+
 		try {
-			storageAccount = CloudStorageAccount.parse(connectStr);			
-			blobClient = storageAccount.createCloudBlobClient();			
-		    container = blobClient.getContainerReference(containerName);		
-		    blob = container.getBlockBlobReference(filePath);	    
-		} 
-		
+			storageAccount = CloudStorageAccount.parse(connectStr);
+			blobClient = storageAccount.createCloudBlobClient();
+			container = blobClient.getContainerReference(containerName);
+			blob = container.getBlockBlobReference(filePath);
+		}
+
 		catch (StorageException e) {
 			e.printStackTrace();
-		}
-		catch (InvalidKeyException e) {			
+		} catch (InvalidKeyException e) {
 			e.printStackTrace();
 		} catch (URISyntaxException e) {
-			
+
 			e.printStackTrace();
 		}
-		
+
 		return blob;
 	}
 
-	
-	private boolean isBlankStr(String str)
-	{		
-		if(str == null || "".equals(str.trim())){
+	private boolean isBlankStr(String str) {
+		if (str == null || "".equals(str.trim())) {
 			return true;
-		}		
-		return false;		
+		}
+		return false;
 	}
-	
+
 }
